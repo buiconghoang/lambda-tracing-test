@@ -1,0 +1,26 @@
+service: franky-lambda-tracing
+
+provider:
+  name: aws
+  runtime: go1.x
+  iam:
+  region: ap-northeast-1
+  profile: aa_franky
+
+  timeout: 20 # optional, in seconds, default is 6
+
+custom:
+  datadog:
+    site:  ${env:DD_SITE_ENV, "dd_site_default"}
+    apiKey:  ${env:DD_API_KEY_ENV, "dd_api_key_default"}
+
+functions:
+  helloWorld:
+    handler: bin/hello
+    environment:
+      DD_API_KEY: ${env:DD_API_KEY_ENV, "dd_api_key_default"}
+      DD_SITE: ${env:DD_SITE_ENV, "dd_site_default"}
+      DD_ENV: "devhbc"
+      DD_SERVERLESS_LOGS_ENABLED: true
+      DD_MERGE_XRAY_TRACES: false
+      DD_TRACE_ENABLED: true

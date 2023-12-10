@@ -1,0 +1,5 @@
+**/.serverless
+**/bin
+**/vendor
+**/.idea
+**/mylog
