@@ -58,8 +58,12 @@ func main() {
 }
 
 type PayloadData struct {
-	Hello string `json:"hello"`
-	LambdaHeader
+	Data   interface{}  `json:"data"`
+	Header LambdaHeader `json:"header"`
+}
+type HelloPayload struct {
+	StrData string `json:"str_data"`
+	IntData int    `json:"int_data"`
 }
 
 type LambdaHeader struct {
@@ -104,9 +108,16 @@ func InvokeLambda(ctx context.Context) {
 
 	// Lambda function name and payload
 	functionName := "franky-lambda-tracing-dev-helloWorld"
+	helloPayload := HelloPayload{
+		StrData: "hello world",
+		IntData: 123,
+	}
+
+	lambdaHeader := LambdaHeader{TraceInfo: tracerCarrier}
+
 	payload := PayloadData{
-		Hello:        "hello hihi 1",
-		LambdaHeader: LambdaHeader{TraceInfo: tracerCarrier},
+		Data:   helloPayload,
+		Header: lambdaHeader,
 	}
 
 	payloadJSON, _ := json.Marshal(payload)

@@ -15,6 +15,15 @@ type LambdaHeader struct {
 	TraceInfo tracer.TextMapCarrier `json:"trace_info"`
 }
 
+type PayloadData struct {
+	Data   interface{}  `json:"data"`
+	Header LambdaHeader `json:"header"`
+}
+type HelloPayload struct {
+	StrData string `json:"str_data"`
+	IntData int    `json:"int_data"`
+}
+
 func main() {
 	cfg := &ddlambda.Config{
 		// we can manually extract tracing data from tracing injection
@@ -37,7 +46,8 @@ func traceContextExtractor(ctx context.Context, ev json.RawMessage) map[string]s
 	return headers.TraceInfo
 }
 
-func HandleRequest(ctx context.Context, ev *json.RawMessage) (*string, error) {
+func HandleRequest(ctx context.Context, payloadData PayloadData) (*string, error) {
+	//#region logging and using extractor
 	//fmt.Printf("old context_content: %+v \n\n", ctx)
 	//if ev == nil {
 	//	return nil, fmt.Errorf("received nil event")
@@ -45,36 +55,14 @@ func HandleRequest(ctx context.Context, ev *json.RawMessage) (*string, error) {
 	//fmt.Printf("\n============\ndata: %+v", string(*ev))
 	//newCtx := ctx
 
-	//#region test expand span context
 	//// because current context is not include traceID, spanID, so we can't se
 	//span, _ := tracer.StartSpanFromContext(ctx, "lambda HandleRequest 3333")
 	//defer span.Finish()
 	//span.SetTag("exec lambda", "hello")
-	//#endregion test expand span context
+	//#endregion logging and using extractor
+	fmt.Printf("handle request payload data: %+v", payloadData)
 
-	//eventJSON, err := json.Marshal(ev)
-	//if err != nil {
-	//	fmt.Printf("can not marshal event: %+v", err)
-	//	//return ctx
-	//}
-	//headers := LambdaHeader{}
-	//err = json.Unmarshal(eventJSON, &headers)
-	//if err != nil {
-	//	fmt.Printf("can not Unmarshal event data to textMapCarrier: %+v", err)
-	//	//return ctx
-	//}
-	//fmt.Printf("\n\n====\nHandleRequest header: %+v \n\n", headers.TraceInfo)
-	//
-	//spanCtx, err := tracer.Extract(headers.TraceInfo)
-	//if err != nil {
-	//	fmt.Errorf("can not tracer.Extract(textMapCarrier)  textMapCarrier: %+v; err: %+v \n\n", headers.TraceInfo, err)
-	//	//return ctx
-	//}
-	//newSpan := tracer.StartSpan("Get tracing context", tracer.ChildOf(spanCtx))
-	//defer newSpan.Finish()
-	//newCtx := tracer.ContextWithSpan(ctx, newSpan)
-
-	newCtx := handleTracingManual(ctx, ev)
+	newCtx := handleTracingManual(ctx, payloadData.Header)
 	fmt.Printf("handleTracingManual newContext outside: %+v \n===========\n", newCtx)
 	spanCtx1 := childLambda(newCtx, "1")
 	childLambda(newCtx, "2")
@@ -83,8 +71,20 @@ func HandleRequest(ctx context.Context, ev *json.RawMessage) (*string, error) {
 	time.Sleep(2 * time.Second)
 	fmt.Printf("\n===========\n fnish sleeeepy")
 
-	x := "hello"
-	return &x, nil
+	data := HelloPayload{}
+
+	payloadDataJson, err := json.Marshal(payloadData.Data)
+	if err != nil {
+		fmt.Printf("can not json.Marshal(payloadData.Data) :%v", err)
+		return nil, err
+	}
+	err = json.Unmarshal(payloadDataJson, &data)
+	if err != nil {
+		fmt.Printf("can not json.Unmarshal(payloadDataJson, &data): %v", err)
+		return nil, err
+	}
+
+	return &data.StrData, nil
 }
 
 func childLambda(ctx context.Context, name string) context.Context {
