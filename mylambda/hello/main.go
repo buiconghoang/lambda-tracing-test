@@ -62,10 +62,10 @@ func HandleRequest(ctx context.Context, payloadData PayloadData) (*string, error
 	//#endregion logging and using extractor
 	fmt.Printf("handle request payload data: %+v", payloadData)
 
-	newCtx := handleTracingManual(ctx, payloadData.Header)
-	fmt.Printf("handleTracingManual newContext outside: %+v \n===========\n", newCtx)
-	spanCtx1 := childLambda(newCtx, "1")
-	childLambda(newCtx, "2")
+	ctx = handleTracingManual(ctx, payloadData.Header)
+	fmt.Printf("handleTracingManual newContext outside: %+v \n===========\n", ctx)
+	spanCtx1 := childLambda(ctx, "1")
+	childLambda(ctx, "2")
 	childLambda(spanCtx1, "3")
 	fmt.Printf("\n===========\n start sleeeepy")
 	time.Sleep(2 * time.Second)
